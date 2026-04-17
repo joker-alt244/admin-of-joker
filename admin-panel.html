@@ -1,0 +1,1247 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>SoundWave Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+/* ============================================================
+   CONFIG & TOKENS
+   ============================================================ */
+:root {
+  --accent: #1DB954;
+  --accent2: #FF4D67;
+  --accent3: #7C5CFC;
+  --bg: #0A0A0F;
+  --bg2: #111118;
+  --bg3: #1A1A24;
+  --surface: #1E1E2A;
+  --surface2: #252535;
+  --text: #FFFFFF;
+  --text2: #A0A0B8;
+  --text3: #606078;
+  --border: rgba(255,255,255,0.07);
+  --radius: 14px;
+  --radius-sm: 8px;
+  --transition: 0.22s cubic-bezier(0.4,0,0.2,1);
+  --shadow: 0 8px 32px rgba(0,0,0,0.5);
+  --sidebar-w: 220px;
+}
+[data-theme="light"] {
+  --bg: #F4F4F8; --bg2: #EAEAF0; --bg3: #DCDCE6;
+  --surface: #FFFFFF; --surface2: #F0F0F6;
+  --text: #0A0A0F; --text2: #555570; --text3: #9999AA;
+  --border: rgba(0,0,0,0.08); --shadow: 0 8px 32px rgba(0,0,0,0.1);
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100dvh; -webkit-font-smoothing: antialiased; }
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+.admin-layout { display: flex; min-height: 100dvh; }
+/* SIDEBAR */
+.sidebar {
+  width: var(--sidebar-w); background: var(--bg2);
+  border-right: 1px solid var(--border);
+  display: flex; flex-direction: column;
+  position: fixed; top: 0; left: 0; bottom: 0;
+  z-index: 100; transition: transform var(--transition);
+}
+@media (max-width: 768px) {
+  .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); }
+  .main-area { margin-left: 0 !important; }
+}
+.sidebar-logo {
+  padding: 22px 20px 16px;
+  border-bottom: 1px solid var(--border);
+  font-family: 'Syne', sans-serif;
+  font-size: 1.2rem; font-weight: 800;
+}
+.sidebar-logo span { color: var(--accent); }
+.sidebar-admin-badge {
+  font-size: 0.65rem; color: var(--text3);
+  letter-spacing: 1.5px; text-transform: uppercase;
+  display: block; margin-top: 2px;
+}
+.nav-list { flex: 1; padding: 12px 0; overflow-y: auto; }
+.nav-item {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 18px; cursor: pointer;
+  color: var(--text2); font-size: 0.9rem; font-weight: 500;
+  border-left: 3px solid transparent;
+  transition: color var(--transition), background var(--transition), border-color var(--transition);
+  user-select: none;
+}
+.nav-item:hover { background: var(--surface); color: var(--text); }
+.nav-item.active { color: var(--accent); background: rgba(29,185,84,0.08); border-left-color: var(--accent); }
+.nav-item .nav-icon { font-size: 1.1rem; width: 22px; text-align: center; flex-shrink: 0; }
+.sidebar-bottom { padding: 14px 18px; border-top: 1px solid var(--border); }
+.sidebar-user { display: flex; align-items: center; gap: 10px; }
+.sidebar-avatar { width: 34px; height: 34px; border-radius: 50%; background: var(--accent3); display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 700; flex-shrink: 0; }
+.sidebar-name { font-size: 0.83rem; font-weight: 600; }
+.sidebar-role { font-size: 0.72rem; color: var(--text3); }
+/* MAIN AREA */
+.main-area { margin-left: var(--sidebar-w); flex: 1; display: flex; flex-direction: column; min-width: 0; }
+.top-header {
+  background: var(--bg2); border-bottom: 1px solid var(--border);
+  padding: 14px 22px; display: flex; align-items: center;
+  gap: 14px; position: sticky; top: 0; z-index: 50;
+}
+.hamburger { display: none; background: none; border: none; color: var(--text2); font-size: 1.4rem; cursor: pointer; padding: 4px; }
+@media (max-width: 768px) { .hamburger { display: flex; } }
+.header-title { font-family: 'Syne', sans-serif; font-size: 1rem; font-weight: 700; flex: 1; }
+.header-actions { display: flex; gap: 10px; align-items: center; }
+.theme-pill {
+  padding: 6px 14px; border-radius: 50px;
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text2); font-size: 0.78rem; cursor: pointer;
+  transition: var(--transition);
+}
+.theme-pill:hover { border-color: var(--accent); color: var(--accent); }
+/* CONTENT AREA */
+.content-area { flex: 1; padding: 24px 22px; overflow-y: auto; }
+/* TAB PANELS */
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
+/* ============================================================
+   OVERVIEW / STATS
+   ============================================================ */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px; margin-bottom: 28px; }
+.stat-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 16px;
+  display: flex; flex-direction: column; gap: 6px;
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+.stat-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.stat-icon { font-size: 1.5rem; }
+.stat-value { font-family: 'Syne', sans-serif; font-size: 1.8rem; font-weight: 800; line-height: 1; }
+.stat-label { font-size: 0.78rem; color: var(--text2); }
+.stat-card.accent { border-color: rgba(29,185,84,0.3); background: rgba(29,185,84,0.07); }
+.stat-card.warning { border-color: rgba(255,165,0,0.3); background: rgba(255,165,0,0.06); }
+.stat-card.danger { border-color: rgba(255,77,103,0.3); background: rgba(255,77,103,0.07); }
+/* ============================================================
+   CHART CANVAS
+   ============================================================ */
+.chart-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 28px; }
+@media (max-width: 640px) { .chart-row { grid-template-columns: 1fr; } }
+.chart-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 18px 16px;
+}
+.chart-title { font-family: 'Syne', sans-serif; font-size: 0.9rem; font-weight: 700; margin-bottom: 14px; color: var(--text); }
+canvas { width: 100% !important; height: 160px !important; display: block; }
+/* ============================================================
+   SECTION / CARD PATTERNS
+   ============================================================ */
+.section-card {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 20px;
+  margin-bottom: 20px;
+}
+.section-card-title {
+  font-family: 'Syne', sans-serif; font-size: 0.95rem;
+  font-weight: 700; margin-bottom: 16px;
+  display: flex; align-items: center; justify-content: space-between;
+}
+/* ============================================================
+   TABLES
+   ============================================================ */
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+thead th {
+  background: var(--bg3); color: var(--text2);
+  padding: 10px 12px; text-align: left;
+  font-size: 0.72rem; letter-spacing: 0.8px;
+  text-transform: uppercase; font-weight: 600;
+  white-space: nowrap;
+}
+thead th:first-child { border-radius: var(--radius-sm) 0 0 var(--radius-sm); }
+thead th:last-child { border-radius: 0 var(--radius-sm) var(--radius-sm) 0; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background var(--transition); }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface2); }
+tbody td { padding: 10px 12px; color: var(--text); vertical-align: middle; }
+.song-thumb-sm { width: 38px; height: 38px; border-radius: 6px; object-fit: cover; vertical-align: middle; margin-right: 8px; }
+.category-tag {
+  display: inline-block; padding: 2px 10px;
+  border-radius: 20px; font-size: 0.7rem; font-weight: 600;
+  background: var(--surface2); color: var(--text2);
+}
+/* ============================================================
+   FORMS
+   ============================================================ */
+.form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 560px) { .form-grid { grid-template-columns: 1fr; } }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group.full { grid-column: 1 / -1; }
+.form-label { font-size: 0.78rem; color: var(--text2); font-weight: 500; }
+.form-input, .form-select, .form-textarea {
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  padding: 10px 12px; font-family: 'DM Sans', sans-serif;
+  font-size: 0.88rem; outline: none;
+  transition: border-color var(--transition), background var(--transition);
+  width: 100%;
+}
+.form-input:focus, .form-select:focus, .form-textarea:focus {
+  border-color: var(--accent); background: var(--surface);
+}
+.form-input::placeholder, .form-textarea::placeholder { color: var(--text3); }
+.form-select option { background: var(--bg2); }
+.form-textarea { resize: vertical; min-height: 80px; }
+.form-hint { font-size: 0.7rem; color: var(--text3); margin-top: 2px; }
+.upload-zone {
+  border: 2px dashed var(--border); border-radius: var(--radius-sm);
+  padding: 20px; text-align: center; cursor: pointer;
+  color: var(--text3); font-size: 0.83rem;
+  transition: border-color var(--transition), color var(--transition);
+}
+.upload-zone:hover { border-color: var(--accent); color: var(--accent); }
+/* ============================================================
+   BUTTONS
+   ============================================================ */
+.btn {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 9px 18px; border-radius: 50px; border: none;
+  font-family: 'DM Sans', sans-serif; font-size: 0.85rem;
+  font-weight: 600; cursor: pointer; transition: var(--transition);
+  white-space: nowrap;
+}
+.btn-green { background: var(--accent); color: #000; }
+.btn-green:hover { opacity: 0.88; transform: translateY(-1px); }
+.btn-ghost { background: var(--surface2); color: var(--text2); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: var(--text2); color: var(--text); }
+.btn-danger { background: rgba(255,77,103,0.15); color: var(--accent2); border: 1px solid rgba(255,77,103,0.3); }
+.btn-danger:hover { background: var(--accent2); color: #fff; }
+.btn-approve { background: rgba(29,185,84,0.15); color: var(--accent); border: 1px solid rgba(29,185,84,0.3); }
+.btn-approve:hover { background: var(--accent); color: #000; }
+.btn-sm { padding: 5px 12px; font-size: 0.78rem; }
+/* ============================================================
+   PREMIUM REQUESTS
+   ============================================================ */
+.req-card {
+  background: var(--bg3); border-radius: var(--radius);
+  border: 1px solid var(--border); padding: 16px;
+  margin-bottom: 12px; display: flex; gap: 14px;
+  align-items: flex-start;
+}
+.req-proof { width: 70px; height: 70px; border-radius: 8px; object-fit: cover; flex-shrink: 0; cursor: pointer; }
+.req-info { flex: 1; min-width: 0; }
+.req-name { font-weight: 600; font-size: 0.9rem; margin-bottom: 4px; }
+.req-plan { font-size: 0.75rem; color: var(--text2); margin-bottom: 8px; }
+.req-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.req-status {
+  font-size: 0.7rem; font-weight: 700; padding: 2px 10px;
+  border-radius: 20px; display: inline-block;
+  letter-spacing: 0.5px; text-transform: uppercase;
+}
+.req-status.pending { background: rgba(255,165,0,0.2); color: orange; }
+.req-status.approved { background: rgba(29,185,84,0.2); color: var(--accent); }
+/* ============================================================
+   BANNER CARD
+   ============================================================ */
+.banner-admin-card {
+  display: flex; gap: 14px; align-items: center;
+  background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--radius); padding: 14px;
+  margin-bottom: 10px;
+}
+.banner-admin-thumb { width: 90px; height: 54px; object-fit: cover; border-radius: 8px; flex-shrink: 0; background: var(--surface2); }
+.banner-admin-info { flex: 1; min-width: 0; }
+.banner-admin-title { font-size: 0.88rem; font-weight: 600; }
+.banner-admin-link { font-size: 0.73rem; color: var(--text3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 200px; }
+/* ============================================================
+   CONFIRM MODAL
+   ============================================================ */
+.overlay {
+  position: fixed; inset: 0; z-index: 500;
+  background: rgba(0,0,0,0.75); display: none;
+  align-items: center; justify-content: center; padding: 20px;
+  backdrop-filter: blur(6px);
+}
+.overlay.open { display: flex; }
+.modal-box {
+  background: var(--bg2); border-radius: 18px; padding: 26px 22px;
+  max-width: 360px; width: 100%; border: 1px solid var(--border);
+  text-align: center;
+}
+.modal-icon { font-size: 2.8rem; margin-bottom: 12px; }
+.modal-title { font-family: 'Syne', sans-serif; font-size: 1.1rem; font-weight: 800; margin-bottom: 8px; }
+.modal-desc { font-size: 0.85rem; color: var(--text2); line-height: 1.5; margin-bottom: 20px; }
+.modal-actions { display: flex; gap: 10px; justify-content: center; }
+/* ============================================================
+   TOAST
+   ============================================================ */
+.toast {
+  position: fixed; bottom: 24px; left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--surface2); color: var(--text);
+  padding: 10px 20px; border-radius: 50px;
+  font-size: 0.82rem; font-weight: 500;
+  opacity: 0; pointer-events: none; z-index: 999;
+  transition: opacity 0.3s, transform 0.3s;
+  white-space: nowrap; border: 1px solid var(--border);
+}
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+/* ============================================================
+   SIDEBAR OVERLAY (mobile)
+   ============================================================ */
+.sidebar-overlay {
+  position: fixed; inset: 0; z-index: 99;
+  background: rgba(0,0,0,0.6); display: none;
+}
+.sidebar-overlay.open { display: block; }
+/* ============================================================
+   MISC
+   ============================================================ */
+.pill { display: inline-block; padding: 3px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 600; }
+.pill-green { background: rgba(29,185,84,0.18); color: var(--accent); }
+.pill-orange { background: rgba(255,165,0,0.18); color: orange; }
+.pill-red { background: rgba(255,77,103,0.18); color: var(--accent2); }
+.empty-state { text-align: center; padding: 40px 20px; color: var(--text3); }
+.empty-state-icon { font-size: 2.5rem; margin-bottom: 10px; }
+.divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; }
+.export-btn-row { display: flex; gap: 10px; flex-wrap: wrap; }
+input[type="file"] { display: none; }
+.proof-img-full { max-width: 100%; border-radius: 10px; }
+</style>
+</head>
+<body>
+<!-- SIDEBAR MOBILE OVERLAY -->
+<div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<!-- CONFIRM MODAL -->
+<div class="overlay" id="confirmModal">
+  <div class="modal-box">
+    <div class="modal-icon" id="confirmIcon">⚠️</div>
+    <div class="modal-title" id="confirmTitle">Are you sure?</div>
+    <div class="modal-desc" id="confirmDesc">This action cannot be undone.</div>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-danger" id="confirmOkBtn" onclick="confirmOk()">Delete</button>
+    </div>
+  </div>
+</div>
+
+<!-- PROOF PREVIEW MODAL -->
+<div class="overlay" id="proofModal">
+  <div class="modal-box" style="max-width:420px">
+    <img id="proofModalImg" class="proof-img-full" src="" alt="Payment Proof"/>
+    <button class="btn btn-ghost" style="margin-top:14px;width:100%" onclick="document.getElementById('proofModal').classList.remove('open')">Close</button>
+  </div>
+</div>
+
+<!-- EDIT SONG MODAL -->
+<div class="overlay" id="editSongModal">
+  <div class="modal-box" style="max-width:480px;text-align:left;padding:24px">
+    <div style="font-family:'Syne',sans-serif;font-size:1rem;font-weight:800;margin-bottom:18px">✏️ Edit Song</div>
+    <div class="form-grid">
+      <div class="form-group"><label class="form-label">Title</label><input class="form-input" id="editTitle"/></div>
+      <div class="form-group"><label class="form-label">Artist</label><input class="form-input" id="editArtist"/></div>
+      <div class="form-group"><label class="form-label">Category</label>
+        <select class="form-select" id="editCategory">
+          <option value="pop">Pop</option><option value="hiphop">Hip-Hop</option>
+          <option value="electronic">Electronic</option><option value="indie">Indie</option>
+          <option value="trending">Trending</option><option value="new">New</option>
+        </select>
+      </div>
+      <div class="form-group"><label class="form-label">Cover URL</label><input class="form-input" id="editCover" placeholder="https://..."/></div>
+      <div class="form-group full"><label class="form-label">MP3 URL</label><input class="form-input" id="editUrl" placeholder="https://...mp3"/></div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:18px">
+      <button class="btn btn-ghost" onclick="document.getElementById('editSongModal').classList.remove('open')">Cancel</button>
+      <button class="btn btn-green" onclick="saveEditSong()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN LAYOUT -->
+<div class="admin-layout">
+  <!-- SIDEBAR -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+      Sound<span>Wave</span>
+      <span class="sidebar-admin-badge">Admin Panel</span>
+    </div>
+    <div class="nav-list">
+      <div class="nav-item active" onclick="switchTab('overview',this)">
+        <span class="nav-icon">📊</span> Overview
+      </div>
+      <div class="nav-item" onclick="switchTab('songs',this)">
+        <span class="nav-icon">🎵</span> Song Library
+      </div>
+      <div class="nav-item" onclick="switchTab('banners',this)">
+        <span class="nav-icon">🖼️</span> Banners
+      </div>
+      <div class="nav-item" onclick="switchTab('premium',this)">
+        <span class="nav-icon">👑</span> Premium Requests
+        <span id="pendingBadge" style="margin-left:auto;background:var(--accent2);color:#fff;font-size:0.65rem;font-weight:700;padding:2px 7px;border-radius:10px;display:none">0</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('payments',this)">
+        <span class="nav-icon">💳</span> Payment Setup
+      </div>
+      <div class="nav-item" onclick="switchTab('settings',this)">
+        <span class="nav-icon">⚙️</span> Settings
+      </div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="sidebar-user">
+        <div class="sidebar-avatar">A</div>
+        <div>
+          <div class="sidebar-name">Admin</div>
+          <div class="sidebar-role">Super Admin</div>
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <!-- MAIN AREA -->
+  <div class="main-area">
+    <div class="top-header">
+      <button class="hamburger" onclick="openSidebar()">☰</button>
+      <div class="header-title" id="headerTitle">Overview</div>
+      <div class="header-actions">
+        <button class="theme-pill" onclick="toggleTheme()">🌙 Theme</button>
+        <a href="user-panel.html" target="_blank" class="btn btn-ghost btn-sm">👁 User View</a>
+      </div>
+    </div>
+
+    <div class="content-area">
+      <!-- ======================================================
+           TAB: OVERVIEW
+           ====================================================== -->
+      <div class="tab-panel active" id="tab-overview">
+        <div class="stats-grid" id="statsGrid"></div>
+        <div class="chart-row">
+          <div class="chart-card">
+            <div class="chart-title">Songs by Category</div>
+            <canvas id="chartCategory"></canvas>
+          </div>
+          <div class="chart-card">
+            <div class="chart-title">Recent Activity</div>
+            <canvas id="chartActivity"></canvas>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-title">Recent Songs Added</div>
+          <div id="recentSongsOverview"></div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           TAB: SONG LIBRARY
+           ====================================================== -->
+      <div class="tab-panel" id="tab-songs">
+        <!-- ADD SONG FORM -->
+        <div class="section-card">
+          <div class="section-card-title">
+            ➕ Add New Song
+            <button class="btn btn-ghost btn-sm" onclick="toggleAddForm()">Toggle Form</button>
+          </div>
+          <div id="addSongForm">
+            <div class="form-grid">
+              <div class="form-group">
+                <label class="form-label">Song Title *</label>
+                <input class="form-input" id="newTitle" placeholder="e.g. Midnight Pulse"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Artist Name *</label>
+                <input class="form-input" id="newArtist" placeholder="e.g. The Neon Echo"/>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Category</label>
+                <select class="form-select" id="newCategory">
+                  <option value="pop">Pop</option>
+                  <option value="hiphop">Hip-Hop</option>
+                  <option value="electronic">Electronic</option>
+                  <option value="indie">Indie</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label class="form-label">Tags (comma separated)</label>
+                <input class="form-input" id="newTags" placeholder="trending, new"/>
+              </div>
+              <div class="form-group full">
+                <label class="form-label">Cover Image URL *</label>
+                <input class="form-input" id="newCover" placeholder="https://images.unsplash.com/photo.jpg"/>
+                <div class="form-hint">Must be a direct image link (.jpg, .jpeg, .png, .webp)</div>
+              </div>
+              <div class="form-group full">
+                <label class="form-label">MP3 URL</label>
+                <input class="form-input" id="newUrl" placeholder="https://example.com/song.mp3"/>
+              </div>
+              <div class="form-group full">
+                <label class="form-label">— OR — Upload MP3 File</label>
+                <div class="upload-zone" onclick="document.getElementById('mp3File').click()">
+                  🎵 Click to upload MP3 (converts to Data URL)
+                  <br><span style="font-size:0.72rem">Max recommended: 8MB</span>
+                </div>
+                <input type="file" id="mp3File" accept="audio/mpeg,audio/mp3" onchange="handleMp3Upload(event)"/>
+                <div id="mp3UploadStatus" style="font-size:0.75rem;color:var(--accent);margin-top:4px;display:none">✅ MP3 ready (DataURL)</div>
+              </div>
+            </div>
+            <button class="btn btn-green" style="margin-top:16px" onclick="addSong()">➕ Add Song</button>
+          </div>
+        </div>
+        <!-- SONG TABLE -->
+        <div class="section-card">
+          <div class="section-card-title">
+            🎵 Song Library (<span id="songCount">0</span>)
+            <input class="form-input" id="songSearch" placeholder="Search library…" style="max-width:180px;padding:6px 12px;font-size:0.8rem" oninput="renderSongTable(this.value)"/>
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Song</th>
+                  <th>Artist</th>
+                  <th>Category</th>
+                  <th>Tags</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="songTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           TAB: BANNERS
+           ====================================================== -->
+      <div class="tab-panel" id="tab-banners">
+        <div class="section-card">
+          <div class="section-card-title">➕ Add Banner</div>
+          <div class="form-grid">
+            <div class="form-group full">
+              <label class="form-label">Banner Image URL *</label>
+              <input class="form-input" id="bannerImg" placeholder="https://images.unsplash.com/photo.jpg"/>
+              <div class="form-hint">Must be a direct image link (.jpg, .jpeg, .png)</div>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Banner Title *</label>
+              <input class="form-input" id="bannerTitle" placeholder="New Releases Weekly"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Tag / Label</label>
+              <input class="form-input" id="bannerTag" placeholder="Featured"/>
+            </div>
+            <div class="form-group full">
+              <label class="form-label">Redirect Link (optional)</label>
+              <input class="form-input" id="bannerLink" placeholder="https://..."/>
+            </div>
+          </div>
+          <button class="btn btn-green" style="margin-top:14px" onclick="addBanner()">➕ Add Banner</button>
+        </div>
+        <div class="section-card">
+          <div class="section-card-title">🖼️ Active Banners</div>
+          <div id="bannerList"></div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           TAB: PREMIUM REQUESTS
+           ====================================================== -->
+      <div class="tab-panel" id="tab-premium">
+        <div class="section-card">
+          <div class="section-card-title">
+            👑 Premium Requests
+            <div style="display:flex;gap:8px">
+              <button class="btn btn-ghost btn-sm" onclick="renderPremiumRequests('all')" id="f-all">All</button>
+              <button class="btn btn-ghost btn-sm" onclick="renderPremiumRequests('pending')" id="f-pending">Pending</button>
+              <button class="btn btn-ghost btn-sm" onclick="renderPremiumRequests('approved')" id="f-approved">Approved</button>
+            </div>
+          </div>
+          <div id="premiumList"></div>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           TAB: PAYMENT SETUP
+           ====================================================== -->
+      <div class="tab-panel" id="tab-payments">
+        <div class="section-card">
+          <div class="section-card-title">💳 UPI & Payment Configuration</div>
+          <div class="form-grid">
+            <div class="form-group">
+              <label class="form-label">Your UPI ID</label>
+              <input class="form-input" id="settUpi" placeholder="yourname@upi"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">QR Code Image URL</label>
+              <input class="form-input" id="settQr" placeholder="https://...qr.png"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Monthly Price (₹)</label>
+              <input class="form-input" type="number" id="settMonthly" placeholder="99"/>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Yearly Price (₹)</label>
+              <input class="form-input" type="number" id="settYearly" placeholder="799"/>
+            </div>
+          </div>
+          <button class="btn btn-green" style="margin-top:16px" onclick="savePaymentSettings()">💾 Save Payment Settings</button>
+        </div>
+      </div>
+
+      <!-- ======================================================
+           TAB: SETTINGS
+           ====================================================== -->
+      <div class="tab-panel" id="tab-settings">
+        <div class="section-card">
+          <div class="section-card-title">📤 Export / Import Data</div>
+          <p style="font-size:0.85rem;color:var(--text2);margin-bottom:16px">Export all app data (songs, banners, settings) as JSON, or import a backup.</p>
+          <div class="export-btn-row">
+            <button class="btn btn-green" onclick="exportData()">⬇️ Export JSON</button>
+            <button class="btn btn-ghost" onclick="document.getElementById('importFile').click()">⬆️ Import JSON</button>
+            <input type="file" id="importFile" accept="application/json" onchange="importData(event)"/>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-title">🧹 Danger Zone</div>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-danger" onclick="confirmAction('Reset all songs to demo?','This will restore default 6 songs.','🎵',resetSongs)">Reset Songs</button>
+            <button class="btn btn-danger" onclick="confirmAction('Reset all banners?','This will restore default banners.','🖼️',resetBanners)">Reset Banners</button>
+            <button class="btn btn-danger" onclick="confirmAction('Clear ALL data?','This cannot be undone!','⚠️',clearAll)">Clear All Data</button>
+          </div>
+        </div>
+        <div class="section-card">
+          <div class="section-card-title">ℹ️ About</div>
+          <div style="font-size:0.84rem;color:var(--text2);line-height:1.7">
+            <div><strong>SoundWave Admin</strong> v1.0.0</div>
+            <div>Built with HTML5 · CSS3 · Vanilla JavaScript</div>
+            <div>Data stored in <code style="background:var(--surface2);padding:1px 6px;border-radius:4px;font-size:0.8rem">localStorage</code></div>
+          </div>
+        </div>
+      </div>
+    </div><!-- /content-area -->
+  </div><!-- /main-area -->
+</div><!-- /admin-layout -->
+
+<script>
+/* ============================================================
+   CONFIG
+   ============================================================ */
+const STORAGE_KEYS = {
+  SONGS: 'sw_songs',
+  BANNERS: 'sw_banners',
+  SETTINGS: 'sw_settings',
+  RECENT: 'sw_recent',
+  LIKES: 'sw_likes',
+  QUEUE: 'sw_queue',
+  USERS: 'sw_users',
+  CURRENT_USER: 'sw_current_user',
+  PREMIUM_REQUESTS: 'sw_premium_requests'
+};
+
+/* ============================================================
+   🔥 FIREBASE CONFIG (Optional - Uncomment to enable)
+   ============================================================
+// import { initializeApp } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-app.js";
+// import { getFirestore, collection, addDoc, getDocs, deleteDoc, doc } from "https://www.gstatic.com/firebasejs/10.0.0/firebase-firestore.js";
+// const firebaseConfig = {
+//   apiKey: "AIzaSyDj7LxTgi4KLOjul1jKtrsTem-ukMhTbNk",
+  authDomain: "soudwave-4c2ed.firebaseapp.com",
+  databaseURL: "https://soudwave-4c2ed-default-rtdb.firebaseio.com",
+  projectId: "soudwave-4c2ed",
+  storageBucket: "soudwave-4c2ed.firebasestorage.app",
+  messagingSenderId: "752100981654",
+  appId: "1:752100981654:web:b253e1659b782b4a227bb7"
+};
+// const fbApp = initializeApp(firebaseConfig);
+// const db = getFirestore(fbApp);
+// async function syncSongsToFirebase(songs) {
+//   for (const s of songs) { await addDoc(collection(db,'songs'), s); }
+// }
+   ============================================================ */
+
+/* ============================================================
+   STORAGE
+   ============================================================ */
+const Storage = {
+  get(key, fallback = null) {
+    try { const v = localStorage.getItem(key); return v ? JSON.parse(v) : fallback; }
+    catch { return fallback; }
+  },
+  set(key, val) {
+    try { localStorage.setItem(key, JSON.stringify(val)); return true; }
+    catch { return false; }
+  },
+  update(key, fn, fb) { const r = fn(this.get(key, fb)); this.set(key, r); return r; }
+};
+
+/* ============================================================
+   DEFAULT DATA
+   ============================================================ */
+const DEFAULT_SONGS = [
+  { id:'s1', title:'Midnight Pulse', artist:'The Neon Echo', category:'electronic', duration:214,
+    cover:'https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=400&q=80',
+    url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3', tags:['trending'] },
+  { id:'s2', title:'Golden Hour', artist:'Priya Verma', category:'pop', duration:198,
+    cover:'https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?w=400&q=80',
+    url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-2.mp3', tags:['new','trending'] },
+  { id:'s3', title:'City Lights', artist:'Jay Malhotra', category:'hiphop', duration:245,
+    cover:'https://images.unsplash.com/photo-1477959858617-67f85cf4f1df?w=400&q=80',
+    url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-3.mp3', tags:['trending'] },
+  { id:'s4', title:'Slow Burn', artist:'Aria Kapoor', category:'indie', duration:187,
+    cover:'https://images.unsplash.com/photo-1444703686981-a3abbc4d4fe3?w=400&q=80',
+    url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-4.mp3', tags:['new'] },
+  { id:'s5', title:'Retrowave Dreams', artist:'Synthwave Collective', category:'electronic', duration:262,
+    cover:'https://images.unsplash.com/photo-1470225620780-dba8ba36b745?w=400&q=80',
+    url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-5.mp3', tags:['new'] },
+  { id:'s6', title:'Monsoon Melody', artist:'Rhea Nair', category:'pop', duration:203,
+    cover:'https://images.unsplash.com/photo-1501426026826-31c667bdf23d?w=400&q=80',
+    url:'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-6.mp3', tags:['trending','new'] }
+];
+const DEFAULT_BANNERS = [
+  { id:'b1', title:'Premium Experience', tag:'Exclusive', image:'https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=80', link:'' },
+  { id:'b2', title:'New Drops Weekly', tag:'New Release', image:'https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=80', link:'' }
+];
+const DEFAULT_SETTINGS = { upiId:'soundwave@upi', upiQR:'', monthlyPrice:99, yearlyPrice:799, appName:'SoundWave' };
+
+function getSongs() {
+  const s = Storage.get(STORAGE_KEYS.SONGS);
+  if (!s || !s.length) { Storage.set(STORAGE_KEYS.SONGS, DEFAULT_SONGS); return DEFAULT_SONGS; }
+  return s;
+}
+function getBanners() {
+  const b = Storage.get(STORAGE_KEYS.BANNERS);
+  if (!b || !b.length) { Storage.set(STORAGE_KEYS.BANNERS, DEFAULT_BANNERS); return DEFAULT_BANNERS; }
+  return b;
+}
+function getSettings() {
+  return { ...DEFAULT_SETTINGS, ...(Storage.get(STORAGE_KEYS.SETTINGS) || {}) };
+}
+
+/* ============================================================
+   UI HELPERS
+   ============================================================ */
+function showToast(msg, dur = 2800) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.classList.remove('show'), dur);
+}
+
+function toggleAddForm() {
+  const f = document.getElementById('addSongForm');
+  f.style.display = f.style.display === 'none' ? '' : 'none';
+}
+
+/* ============================================================
+   TAB NAVIGATION
+   ============================================================ */
+function switchTab(name, el) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  if (el) el.classList.add('active');
+  document.getElementById('headerTitle').textContent =
+    { overview:'Overview', songs:'Song Library', banners:'Banners & Promotions',
+      premium:'Premium Requests', payments:'Payment Setup', settings:'Settings' }[name] || name;
+  if (name === 'overview') renderOverview();
+  if (name === 'songs') renderSongTable();
+  if (name === 'banners') renderBannerList();
+  if (name === 'premium') renderPremiumRequests();
+  if (name === 'payments') loadPaymentForm();
+  closeSidebar();
+}
+
+/* ============================================================
+   SIDEBAR MOBILE
+   ============================================================ */
+function openSidebar() {
+  document.getElementById('sidebar').classList.add('open');
+  document.getElementById('sidebarOverlay').classList.add('open');
+}
+function closeSidebar() {
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('sidebarOverlay').classList.remove('open');
+}
+
+/* ============================================================
+   OVERVIEW / STATS
+   ============================================================ */
+function renderOverview() {
+  const songs = getSongs();
+  const requests = Storage.get(STORAGE_KEYS.PREMIUM_REQUESTS, []);
+  const pending = requests.filter(r => r.status === 'pending').length;
+  const approved = requests.filter(r => r.status === 'approved').length;
+  const likes = (Storage.get(STORAGE_KEYS.LIKES, [])).length;
+  const banners = getBanners().length;
+
+  // Update pending badge
+  const badge = document.getElementById('pendingBadge');
+  if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+  else { badge.style.display = 'none'; }
+
+  document.getElementById('statsGrid').innerHTML = `
+    <div class="stat-card accent"><div class="stat-icon">🎵</div><div class="stat-value">${songs.length}</div><div class="stat-label">Total Songs</div></div>
+    <div class="stat-card"><div class="stat-icon">🖼️</div><div class="stat-value">${banners}</div><div class="stat-label">Active Banners</div></div>
+    <div class="stat-card warning"><div class="stat-icon">👑</div><div class="stat-value">${pending}</div><div class="stat-label">Pending Requests</div></div>
+    <div class="stat-card danger"><div class="stat-icon">✅</div><div class="stat-value">${approved}</div><div class="stat-label">Premium Users</div></div>
+    <div class="stat-card"><div class="stat-icon">❤️</div><div class="stat-value">${likes}</div><div class="stat-label">Total Likes</div></div>
+  `;
+
+  // Recent songs
+  document.getElementById('recentSongsOverview').innerHTML = songs.slice(0, 5).map(s => `
+    <div style="display:flex;align-items:center;gap:12px;padding:8px 0;border-bottom:1px solid var(--border)">
+      <img src="${s.cover}" style="width:38px;height:38px;border-radius:6px;object-fit:cover"/>
+      <div style="flex:1;min-width:0">
+        <div style="font-size:0.85rem;font-weight:600">${s.title}</div>
+        <div style="font-size:0.75rem;color:var(--text2)">${s.artist}</div>
+      </div>
+      <span class="category-tag">${s.category}</span>
+    </div>`).join('');
+
+  renderCharts(songs);
+}
+
+/* ============================================================
+   CHARTS (Canvas API)
+   ============================================================ */
+function renderCharts(songs) {
+  // Category bar chart
+  const catCanvas = document.getElementById('chartCategory');
+  const catCtx = catCanvas.getContext('2d');
+  const cats = {};
+  songs.forEach(s => { cats[s.category] = (cats[s.category] || 0) + 1; });
+  const catLabels = Object.keys(cats);
+  const catVals = catLabels.map(c => cats[c]);
+  const maxVal = Math.max(...catVals, 1);
+  catCanvas.width = catCanvas.offsetWidth || 300;
+  catCanvas.height = 160;
+  catCtx.clearRect(0, 0, catCanvas.width, catCanvas.height);
+  const barW = (catCanvas.width - 40) / catLabels.length * 0.6;
+  const barGap = (catCanvas.width - 40) / catLabels.length;
+  const colors = ['#1DB954','#7C5CFC','#FF4D67','#FFD700','#00B4D8','#F4A261'];
+  catLabels.forEach((label, i) => {
+    const barH = ((catVals[i] / maxVal) * 110);
+    const x = 20 + i * barGap + (barGap - barW) / 2;
+    const y = 130 - barH;
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    catCtx.fillStyle = colors[i % colors.length];
+    roundRect(catCtx, x, y, barW, barH, 4);
+    catCtx.fill();
+    catCtx.fillStyle = isDark ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.4)';
+    catCtx.font = '10px DM Sans';
+    catCtx.textAlign = 'center';
+    catCtx.fillText(label.substring(0,5), x + barW/2, 148);
+    catCtx.fillStyle = isDark ? 'rgba(255,255,255,0.8)' : 'rgba(0,0,0,0.7)';
+    catCtx.fillText(catVals[i], x + barW/2, y - 4);
+  });
+
+  // Activity line chart (simulated)
+  const actCanvas = document.getElementById('chartActivity');
+  const actCtx = actCanvas.getContext('2d');
+  actCanvas.width = actCanvas.offsetWidth || 300;
+  actCanvas.height = 160;
+  actCtx.clearRect(0, 0, actCanvas.width, actCanvas.height);
+  const pts = [20, 35, 28, 48, 55, 40, 65];
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const W = actCanvas.width - 30, H = 130;
+  const mxP = Math.max(...pts);
+  const coords = pts.map((v, i) => ({ x: 15 + (i / (pts.length - 1)) * W, y: 15 + (1 - v / mxP) * H }));
+  actCtx.beginPath();
+  actCtx.moveTo(coords[0].x, coords[0].y);
+  coords.slice(1).forEach((p, i) => {
+    const prev = coords[i];
+    const cpx = (prev.x + p.x) / 2;
+    actCtx.bezierCurveTo(cpx, prev.y, cpx, p.y, p.x, p.y);
+  });
+  actCtx.strokeStyle = '#1DB954';
+  actCtx.lineWidth = 2.5;
+  actCtx.stroke();
+  // Fill
+  actCtx.lineTo(coords[coords.length-1].x, H + 15);
+  actCtx.lineTo(coords[0].x, H + 15);
+  actCtx.closePath();
+  actCtx.fillStyle = 'rgba(29,185,84,0.1)';
+  actCtx.fill();
+  // Points
+  coords.forEach((p, i) => {
+    actCtx.beginPath();
+    actCtx.arc(p.x, p.y, 3.5, 0, Math.PI * 2);
+    actCtx.fillStyle = '#1DB954';
+    actCtx.fill();
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+    actCtx.fillStyle = isDark ? 'rgba(255,255,255,0.4)' : 'rgba(0,0,0,0.35)';
+    actCtx.font = '9px DM Sans';
+    actCtx.textAlign = 'center';
+    actCtx.fillText(days[i], p.x, H + 28);
+  });
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y);
+  ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h);
+  ctx.lineTo(x, y + h);
+  ctx.lineTo(x, y + r);
+  ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+/* ============================================================
+   SONG MANAGEMENT
+   ============================================================ */
+let mp3DataUrl = '';
+
+function handleMp3Upload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    mp3DataUrl = ev.target.result;
+    document.getElementById('mp3UploadStatus').style.display = '';
+    document.getElementById('newUrl').value = '';
+    showToast('✅ MP3 loaded as Data URL');
+  };
+  reader.readAsDataURL(file);
+}
+
+function addSong() {
+  const title = document.getElementById('newTitle').value.trim();
+  const artist = document.getElementById('newArtist').value.trim();
+  const cover = document.getElementById('newCover').value.trim();
+  const url = mp3DataUrl || document.getElementById('newUrl').value.trim();
+  const category = document.getElementById('newCategory').value;
+  const tagsRaw = document.getElementById('newTags').value.trim();
+  const tags = tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [];
+  if (!title || !artist || !cover) { showToast('⚠️ Title, Artist, and Cover are required'); return; }
+  const song = { id: 'song_' + Date.now(), title, artist, category, cover, url: url || '', tags, duration: 0 };
+  Storage.update(STORAGE_KEYS.SONGS, songs => {
+    songs = songs || [];
+    songs.unshift(song);
+    return songs;
+  }, []);
+  // Clear form
+  ['newTitle','newArtist','newCover','newUrl','newTags'].forEach(id => document.getElementById(id).value = '');
+  mp3DataUrl = '';
+  document.getElementById('mp3UploadStatus').style.display = 'none';
+  document.getElementById('mp3File').value = '';
+  showToast('✅ Song added successfully!');
+  renderSongTable();
+  renderOverview();
+}
+
+function renderSongTable(filter = '') {
+  let songs = getSongs();
+  if (filter) songs = songs.filter(s => s.title.toLowerCase().includes(filter.toLowerCase()) || s.artist.toLowerCase().includes(filter.toLowerCase()));
+  document.getElementById('songCount').textContent = songs.length;
+  const tbody = document.getElementById('songTableBody');
+  if (!songs.length) {
+    tbody.innerHTML = `<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text3)">No songs found</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = songs.map(s => `
+    <tr>
+      <td>
+        <img class="song-thumb-sm" src="${s.cover}" alt="" loading="lazy"/>
+        <span style="font-size:0.85rem;font-weight:600">${s.title}</span>
+      </td>
+      <td style="color:var(--text2);font-size:0.83rem">${s.artist}</td>
+      <td><span class="category-tag">${s.category}</span></td>
+      <td style="color:var(--text3);font-size:0.75rem">${(s.tags||[]).join(', ') || '—'}</td>
+      <td>
+        <div style="display:flex;gap:6px">
+          <button class="btn btn-ghost btn-sm" onclick="openEditSong('${s.id}')">✏️</button>
+          <button class="btn btn-danger btn-sm" onclick="confirmAction('Delete this song?','This cannot be undone.','🗑️',()=>deleteSong('${s.id}'))">🗑️</button>
+        </div>
+      </td>
+    </tr>`).join('');
+}
+
+let editingId = null;
+function openEditSong(id) {
+  const songs = getSongs();
+  const song = songs.find(s => s.id === id);
+  if (!song) return;
+  editingId = id;
+  document.getElementById('editTitle').value = song.title;
+  document.getElementById('editArtist').value = song.artist;
+  document.getElementById('editCategory').value = song.category;
+  document.getElementById('editCover').value = song.cover;
+  document.getElementById('editUrl').value = song.url;
+  document.getElementById('editSongModal').classList.add('open');
+}
+
+function saveEditSong() {
+  if (!editingId) return;
+  Storage.update(STORAGE_KEYS.SONGS, songs => {
+    const idx = songs.findIndex(s => s.id === editingId);
+    if (idx !== -1) {
+      songs[idx] = { ...songs[idx],
+        title: document.getElementById('editTitle').value.trim(),
+        artist: document.getElementById('editArtist').value.trim(),
+        category: document.getElementById('editCategory').value,
+        cover: document.getElementById('editCover').value.trim(),
+        url: document.getElementById('editUrl').value.trim()
+      };
+    }
+    return songs;
+  }, []);
+  document.getElementById('editSongModal').classList.remove('open');
+  showToast('✅ Song updated!');
+  renderSongTable();
+}
+
+function deleteSong(id) {
+  Storage.update(STORAGE_KEYS.SONGS, songs => songs.filter(s => s.id !== id), []);
+  showToast('🗑️ Song deleted');
+  renderSongTable();
+  renderOverview();
+}
+
+/* ============================================================
+   BANNER MANAGEMENT
+   ============================================================ */
+function addBanner() {
+  const image = document.getElementById('bannerImg').value.trim();
+  const title = document.getElementById('bannerTitle').value.trim();
+  const tag = document.getElementById('bannerTag').value.trim() || 'Featured';
+  const link = document.getElementById('bannerLink').value.trim();
+  if (!image || !title) { showToast('⚠️ Image URL and Title are required'); return; }
+  const banner = { id: 'ban_' + Date.now(), image, title, tag, link };
+  Storage.update(STORAGE_KEYS.BANNERS, bs => { bs = bs || []; bs.push(banner); return bs; }, []);
+  ['bannerImg','bannerTitle','bannerTag','bannerLink'].forEach(id => document.getElementById(id).value = '');
+  showToast('✅ Banner added!');
+  renderBannerList();
+}
+
+function renderBannerList() {
+  const banners = getBanners();
+  const container = document.getElementById('bannerList');
+  if (!banners.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">🖼️</div>No banners yet</div>`;
+    return;
+  }
+  container.innerHTML = banners.map(b => `
+    <div class="banner-admin-card">
+      <img class="banner-admin-thumb" src="${b.image}" alt="${b.title}" loading="lazy" onerror="this.style.background='var(--surface2)'"/>
+      <div class="banner-admin-info">
+        <div class="banner-admin-title">${b.title}</div>
+        <div style="font-size:0.72rem;color:var(--accent);margin-bottom:2px">${b.tag}</div>
+        <div class="banner-admin-link">${b.link || 'No redirect'}</div>
+      </div>
+      <button class="btn btn-danger btn-sm" onclick="confirmAction('Delete this banner?','The banner will be removed from the user app.','🖼️',()=>deleteBanner('${b.id}'))">🗑️</button>
+    </div>`).join('');
+}
+
+function deleteBanner(id) {
+  Storage.update(STORAGE_KEYS.BANNERS, bs => bs.filter(b => b.id !== id), []);
+  showToast('🗑️ Banner deleted');
+  renderBannerList();
+}
+
+/* ============================================================
+   PREMIUM REQUESTS
+   ============================================================ */
+function renderPremiumRequests(filter = 'all') {
+  const requests = Storage.get(STORAGE_KEYS.PREMIUM_REQUESTS, []);
+  const pending = requests.filter(r => r.status === 'pending').length;
+  const badge = document.getElementById('pendingBadge');
+  if (pending > 0) { badge.textContent = pending; badge.style.display = ''; }
+  else { badge.style.display = 'none'; }
+
+  let filtered = requests;
+  if (filter !== 'all') filtered = requests.filter(r => r.status === filter);
+  filtered = [...filtered].reverse();
+
+  const container = document.getElementById('premiumList');
+  if (!filtered.length) {
+    container.innerHTML = `<div class="empty-state"><div class="empty-state-icon">👑</div>No ${filter === 'all' ? '' : filter} requests</div>`;
+    return;
+  }
+  container.innerHTML = filtered.map(r => `
+    <div class="req-card">
+      <img class="req-proof" src="${r.proof}" alt="proof" onclick="previewProof('${r.proof}')"/>
+      <div class="req-info">
+        <div class="req-name">${r.userName || 'Anonymous'}</div>
+        <div class="req-plan">Plan: <strong>${r.plan || 'monthly'}</strong> · ${new Date(r.ts).toLocaleDateString()}</div>
+        <div style="margin-bottom:8px"><span class="req-status ${r.status}">${r.status}</span></div>
+        <div class="req-actions">
+          ${r.status === 'pending' ? `<button class="btn btn-approve btn-sm" onclick="approvePremium('${r.id}','${r.userId}')">✅ Approve</button>` : ''}
+          <button class="btn btn-danger btn-sm" onclick="confirmAction('Delete this request?','','🗑️',()=>deleteRequest('${r.id}'))">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function approvePremium(reqId, userId) {
+  Storage.update(STORAGE_KEYS.PREMIUM_REQUESTS, reqs => {
+    const r = reqs.find(r => r.id === reqId);
+    if (r) r.status = 'approved';
+    return reqs;
+  }, []);
+  // Update user
+  const cur = Storage.get(STORAGE_KEYS.CURRENT_USER, {});
+  if (cur.id === userId || !userId) {
+    cur.isPremium = true;
+    Storage.set(STORAGE_KEYS.CURRENT_USER, cur);
+  }
+  // Update users array too
+  Storage.update(STORAGE_KEYS.USERS, users => {
+    users = users || [];
+    const u = users.find(u => u.id === userId);
+    if (u) u.isPremium = true;
+    else users.push({ id: userId, isPremium: true });
+    return users;
+  }, []);
+  showToast('✅ User approved as Premium!');
+  renderPremiumRequests();
+}
+
+function deleteRequest(id) {
+  Storage.update(STORAGE_KEYS.PREMIUM_REQUESTS, reqs => reqs.filter(r => r.id !== id), []);
+  showToast('🗑️ Request deleted');
+  renderPremiumRequests();
+}
+
+function previewProof(src) {
+  document.getElementById('proofModalImg').src = src;
+  document.getElementById('proofModal').classList.add('open');
+}
+
+/* ============================================================
+   PAYMENT SETTINGS
+   ============================================================ */
+function loadPaymentForm() {
+  const s = getSettings();
+  document.getElementById('settUpi').value = s.upiId || '';
+  document.getElementById('settQr').value = s.upiQR || '';
+  document.getElementById('settMonthly').value = s.monthlyPrice || 99;
+  document.getElementById('settYearly').value = s.yearlyPrice || 799;
+}
+
+function savePaymentSettings() {
+  const cur = getSettings();
+  const updated = {
+    ...cur,
+    upiId: document.getElementById('settUpi').value.trim(),
+    upiQR: document.getElementById('settQr').value.trim(),
+    monthlyPrice: parseInt(document.getElementById('settMonthly').value) || 99,
+    yearlyPrice: parseInt(document.getElementById('settYearly').value) || 799
+  };
+  Storage.set(STORAGE_KEYS.SETTINGS, updated);
+  showToast('✅ Payment settings saved!');
+}
+
+/* ============================================================
+   CONFIRM MODAL
+   ============================================================ */
+let _confirmCb = null;
+function confirmAction(title, desc, icon, cb) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmDesc').textContent = desc;
+  document.getElementById('confirmIcon').textContent = icon;
+  _confirmCb = cb;
+  document.getElementById('confirmModal').classList.add('open');
+}
+function confirmOk() {
+  if (_confirmCb) _confirmCb();
+  _confirmCb = null;
+  closeConfirm();
+}
+function closeConfirm() {
+  document.getElementById('confirmModal').classList.remove('open');
+}
+
+/* ============================================================
+   EXPORT / IMPORT
+   ============================================================ */
+function exportData() {
+  const data = {
+    songs: getSongs(),
+    banners: getBanners(),
+    settings: getSettings(),
+    premiumRequests: Storage.get(STORAGE_KEYS.PREMIUM_REQUESTS, []),
+    exportedAt: new Date().toISOString(),
+    version: '1.0.0'
+  };
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `soundwave-backup-${Date.now()}.json`;
+  a.click(); URL.revokeObjectURL(url);
+  showToast('✅ Data exported!');
+}
+
+function importData(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = ev => {
+    try {
+      const data = JSON.parse(ev.target.result);
+      if (data.songs) Storage.set(STORAGE_KEYS.SONGS, data.songs);
+      if (data.banners) Storage.set(STORAGE_KEYS.BANNERS, data.banners);
+      if (data.settings) Storage.set(STORAGE_KEYS.SETTINGS, data.settings);
+      if (data.premiumRequests) Storage.set(STORAGE_KEYS.PREMIUM_REQUESTS, data.premiumRequests);
+      showToast('✅ Data imported successfully!');
+      renderOverview();
+    } catch {
+      showToast('❌ Invalid JSON file');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+/* ============================================================
+   RESET / CLEAR
+   ============================================================ */
+function resetSongs() { Storage.set(STORAGE_KEYS.SONGS, DEFAULT_SONGS); renderSongTable(); renderOverview(); showToast('✅ Songs reset to demo data'); }
+function resetBanners() { Storage.set(STORAGE_KEYS.BANNERS, DEFAULT_BANNERS); renderBannerList(); showToast('✅ Banners reset'); }
+function clearAll() {
+  Object.values(STORAGE_KEYS).forEach(k => localStorage.removeItem(k));
+  showToast('🧹 All data cleared!');
+  renderOverview();
+}
+
+/* ============================================================
+   THEME
+   ============================================================ */
+function toggleTheme() {
+  const html = document.documentElement;
+  const next = html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+  html.setAttribute('data-theme', next);
+  Storage.set('sw_admin_theme', next);
+  const btn = document.querySelector('.theme-pill');
+  btn.textContent = next === 'dark' ? '🌙 Theme' : '☀️ Theme';
+  // Re-render charts after theme change
+  setTimeout(renderOverview, 50);
+}
+
+/* ============================================================
+   INIT
+   ============================================================ */
+function init() {
+  const savedTheme = Storage.get('sw_admin_theme', 'dark');
+  document.documentElement.setAttribute('data-theme', savedTheme);
+  if (savedTheme === 'light') document.querySelector('.theme-pill').textContent = '☀️ Theme';
+  renderOverview();
+  window.addEventListener('resize', () => {
+    // Re-render charts on resize
+    if (document.getElementById('tab-overview').classList.contains('active')) {
+      setTimeout(renderOverview, 100);
+    }
+  });
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
